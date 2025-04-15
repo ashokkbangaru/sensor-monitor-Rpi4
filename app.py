@@ -107,7 +107,7 @@ def index():
 
 def run_ngrok():
     print("Starting ngrok tunnel...")
-    subprocess.Popen(["ngrok", "http","--domain=proven-bobcat-wildly.ngrok-free.app", "5000"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.Popen(["ngrok", "http", "5000"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) #replace with this line for custom domain [subprocess.Popen(["ngrok", "http","--domain=p******.ngrok-free.app", "5000"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)]
     time.sleep(5)
     try:
         result = subprocess.run(["curl", "-s", "http://localhost:4040/api/tunnels"],
