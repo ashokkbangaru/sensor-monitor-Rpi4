@@ -30,8 +30,8 @@ sensor_monitor/
 1. **Clone the repo:**
 
    ```bash
-   git clone https://github.com/yourusername/room-monitor-dashboard.git
-   cd room-monitor-dashboard
+   git clone https://github.com/ashokkbangaru/sensor-monitor-Rpi4.git
+   cd sensor-monitor-Rpi4
    ```
 
 2. **Install dependencies:**
