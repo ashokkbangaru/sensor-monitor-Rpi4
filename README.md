@@ -2,6 +2,9 @@
 
 This project is a real-time room monitoring system built with Flask, Socket.IO, and various sensors (DHT11, ultrasonic, and PIR). It features a live dashboard viewable via a web browser and an LCD display for local feedback.
 
+<img width="1253" alt="Screenshot 2025-04-15 235432" src="https://github.com/user-attachments/assets/8232e242-8249-4323-8e15-ef9abfcb64a0" />
+
+
 ## 🔧 Features
 
 - 🌡️ Temperature & 💧 Humidity monitoring (DHT11)
