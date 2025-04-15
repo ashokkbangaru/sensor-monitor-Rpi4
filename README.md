@@ -20,7 +20,7 @@ sensor_monitor/
 ├── app.py                  # Main Flask app
 ├── templates/
 │   └── index.html          # Web dashboard
-├── ngrok_config.sh                # (if any static assets)
+├── ngrok_config.sh         #webserver config
 ├── requirements.txt        # Python dependencies
 └── README.md               # Project documentation
 ```
