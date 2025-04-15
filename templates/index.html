@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Room Monitor Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.socket.io/3.1.3/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+        .motion {
+            font-size: 1.2em;
+            color: green;
+        }
+        .motion.inactive {
+            color: #aaa;
+        }
+        #chart-container {
+            width: 100%;
+            height: 300px;
+        }
+        canvas#chart {
+            width: 100% !important;
+            height: 100% !important;
+        }
+    </style>
+</head>
+<body>
+    <h1>📊 Room Monitoring Dashboard</h1>
+    <div class="grid">
+        <div class="card">
+            <h3>🌡️ Temperature</h3>
+            <div class="value" id="temp">-- °C</div>
+        </div>
+        <div class="card">
+            <h3>💧 Humidity</h3>
+            <div class="value" id="humidity">-- %</div>
+        </div>
+        <div class="card">
+            <h3>📏 Distance Sensor 1</h3>
+            <div class="value" id="dist1">-- cm</div>
+        </div>
+        <div class="card">
+            <h3>📏 Distance Sensor 2</h3>
+            <div class="value" id="dist2">-- cm</div>
+        </div>
+        <div class="card">
+            <h3>🕵️ Motion Detected</h3>
+            <div id="motion" class="motion inactive">No motion</div>
+        </div>
+        <div class="card">
+            <h3>👀 PIR Motion</h3>
+            <div id="pirMotion" class="motion inactive">No PIR motion</div>
+        </div>
+        <div class="card">
+            <h3>⏱ Last Update</h3>
+            <div class="value" id="timestamp">--:--:--</div>
+        </div>
+        <div class="card" style="grid-column: span 2;">
+            <h3>📈 Temperature & Humidity Over Time</h3>
+            <div id="chart-container">
+                <canvas id="chart"></canvas>
+            </div>
+        </div>
+        <div class="card">
+            <h3>📥 Export Data</h3>
+            <button id="exportBtn">Export to CSV</button>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+
+        // Handle reconnection errors
+        socket.on('connect_error', () => {
+            console.log('⚠️ Socket connection failed. Trying to reconnect...');
+        });
+
+        const tempEl = document.getElementById('temp');
+        const humidityEl = document.getElementById('humidity');
+        const dist1El = document.getElementById('dist1');
+        const dist2El = document.getElementById('dist2');
+        const motionEl = document.getElementById('motion');
+        const pirMotionEl = document.getElementById('pirMotion');
+        const timestampEl = document.getElementById('timestamp');
+
+        const ctx = document.getElementById('chart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Temperature (°C)',
+                        data: [],
+                        borderColor: 'rgb(255, 99, 132)',
+                        fill: false,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Humidity (%)',
+                        data: [],
+                        borderColor: 'rgb(54, 162, 235)',
+                        fill: false,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Distance 1 (cm)',
+                        data: [],
+                        borderColor: 'rgb(75, 192, 192)',
+                        fill: false,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Distance 2 (cm)',
+                        data: [],
+                        borderColor: 'rgb(153, 102, 255)',
+                        fill: false,
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Time' }
+                    },
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        function updateTempColor(temp) {
+            if (temp > 30) {
+                tempEl.style.color = 'red'; // High temperature
+            } else if (temp < 15) {
+                tempEl.style.color = 'blue'; // Low temperature
+            } else {
+                tempEl.style.color = 'black'; // Normal temperature
+            }
+        }
+
+        socket.on('sensor_data', data => {
+            const now = new Date().toLocaleTimeString();
+
+            // Update UI
+            const temperature = data.temperature.toFixed(1);
+            tempEl.textContent = `${temperature} °C`;
+            
+            // Call function to update temperature color
+            updateTempColor(temperature);
+
+            humidityEl.textContent = `${data.humidity.toFixed(1)} %`;
+            dist1El.textContent = `${data.distance1.toFixed(1)} cm`;
+            dist2El.textContent = `${data.distance2.toFixed(1)} cm`;
+            timestampEl.textContent = now;
+
+            motionEl.textContent = data.motion ? "Motion Detected!" : "No motion";
+            motionEl.classList.toggle("inactive", !data.motion);
+
+            // Update PIR motion status
+            pirMotionEl.textContent = data.pir_motion ? "PIR Motion Detected!" : "No PIR motion";
+            pirMotionEl.classList.toggle("inactive", !data.pir_motion);
+
+            // Add data to chart
+            chart.data.labels.push(now);
+            chart.data.datasets[0].data.push(data.temperature);
+            chart.data.datasets[1].data.push(data.humidity);
+            chart.data.datasets[2].data.push(data.distance1);
+            chart.data.datasets[3].data.push(data.distance2);
+
+            // Keep only latest 60 points
+            if (chart.data.labels.length > 60) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+                chart.data.datasets[1].data.shift();
+                chart.data.datasets[2].data.shift();
+                chart.data.datasets[3].data.shift();
+            }
+
+            chart.update('none'); // Skip animation for smoother real-time update
+        });
+
+        // Export data to CSV
+        document.getElementById('exportBtn').addEventListener('click', function() {
+            const data = chart.data;  // Use chart data for export
+
+            // Create CSV content
+            let csvContent = "Time, Temperature (°C), Humidity (%), Distance 1 (cm), Distance 2 (cm)\n";
+
+            data.labels.forEach((label, index) => {
+                const temp = data.datasets[0].data[index];
+                const hum = data.datasets[1].data[index];
+                const dist1 = data.datasets[2].data[index];
+                const dist2 = data.datasets[3].data[index];
+                csvContent += `${label}, ${temp}, ${hum}, ${dist1}, ${dist2}\n`;
+            });
+
+            // Create a downloadable CSV link
+            const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "sensor_data.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    </script>
+</body>
+</html>

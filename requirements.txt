@@ -1,0 +1,5 @@
+Flask
+Flask-SocketIO
+eventlet
+Adafruit_DHT
+RPLCD
